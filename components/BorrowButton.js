@@ -66,7 +66,7 @@ export default function BorrowButton({ book, rental, availableCopies }) {
         <button
           onClick={handleReturn}
           disabled={loading}
-          className="px-6 py-3 rounded-lg text-sm font-medium transition-all disabled:opacity-50"
+          className="px-6 py-3 cursor-pointer rounded-lg text-sm font-medium transition-all disabled:opacity-50"
           style={{
             background: 'rgba(139,58,58,0.15)',
             color: '#e07878',
@@ -79,7 +79,7 @@ export default function BorrowButton({ book, rental, availableCopies }) {
         <button
           onClick={handleBorrow}
           disabled={loading || isUnavailable}
-          className={`btn-gold px-6 py-3 rounded-lg text-sm ${isUnavailable ? '' : ''}`}
+          className={`btn-gold cursor-pointer px-6 py-3 rounded-lg text-sm ${isUnavailable ? '' : ''}`}
         >
           {loading ? 'Processing...' : isUnavailable ? 'No Copies Available' : '＋ Borrow Book'}
         </button>

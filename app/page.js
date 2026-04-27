@@ -86,7 +86,7 @@ export default async function HomePage() {
               style={{ color: "var(--text-secondary)" }}
             >
               Borrow from thousands of timeless works. Read classics, discover
-              hidden gems, and return when you're done.
+              hidden gems, and return when you&rsquo;re done.
             </p>
             <div className="flex flex-wrap gap-4 fade-in-delay-3">
               <Link

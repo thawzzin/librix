@@ -124,7 +124,7 @@ export default async function BooksPage({ searchParams }) {
                 {search && (
                   <>
                     <span style={{ color: "var(--accent-gold)" }}>
-                      "{search}"
+                      &ldquo;{search}&rdquo;
                     </span>{" "}
                     ·{" "}
                   </>

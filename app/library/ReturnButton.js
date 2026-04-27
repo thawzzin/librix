@@ -25,7 +25,7 @@ export default function ReturnButton({ rentalId }) {
     <button
       onClick={handleReturn}
       disabled={loading}
-      className="text-xs font-medium px-3 py-1.5 rounded transition-all disabled:opacity-50"
+      className="text-xs cursor-pointer font-medium px-3 py-1.5 rounded transition-all disabled:opacity-50"
       style={{
         background: 'rgba(139,58,58,0.15)',
         color: '#e07878',
