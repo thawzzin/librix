@@ -1,7 +1,14 @@
 import "server-only";
 
 import { z } from "zod";
-import type { GutendexBook, GutendexResponse } from "@/types/gutendex";
+import type {
+  GutendexBook,
+  GutendexBrowseResult,
+} from "@/types/gutendex";
+
+const DEFAULT_API_URL = "https://gutendex.com";
+const REQUEST_TIMEOUT_MS = 12_000;
+const MAX_ATTEMPTS = 2;
 
 const personSchema = z.object({
   name: z.string(),
@@ -33,12 +40,74 @@ const responseSchema = z.object({
   results: z.array(bookSchema),
 });
 
-const EMPTY_RESPONSE: GutendexResponse = {
+const EMPTY_RESPONSE: GutendexBrowseResult = {
   count: 0,
   next: null,
   previous: null,
   results: [],
+  unavailable: true,
 };
+
+class GutendexRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status?: number,
+  ) {
+    super(message);
+    this.name = "GutendexRequestError";
+  }
+}
+
+function getApiUrl(path: string): URL {
+  const baseUrl = process.env.GUTENDEX_API_URL || DEFAULT_API_URL;
+  return new URL(path, baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`);
+}
+
+async function fetchGutendex(url: URL, revalidate: number): Promise<Response> {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    try {
+      const response = await fetch(url, {
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "Librix/1.0 (+https://librixapp.vercel.app)",
+        },
+        next: { revalidate },
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+
+      if (response.ok || response.status === 404) return response;
+
+      lastError = new GutendexRequestError(
+        `Gutendex returned HTTP ${response.status}`,
+        response.status,
+      );
+
+      if (response.status < 500 && response.status !== 403 && response.status !== 429) {
+        break;
+      }
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new GutendexRequestError("Gutendex request failed");
+}
+
+function reportGutendexError(operation: string, error: unknown): void {
+  const details =
+    error instanceof GutendexRequestError
+      ? { message: error.message, status: error.status }
+      : {
+          message: error instanceof Error ? error.message : "Unknown error",
+          name: error instanceof Error ? error.name : undefined,
+        };
+
+  console.error(`[Gutendex] ${operation} failed`, details);
+}
 
 export interface BrowseBooksOptions {
   search?: string;
@@ -52,8 +121,8 @@ export async function browseBooks({
   topic = "",
   page = 1,
   revalidate = 300,
-}: BrowseBooksOptions = {}): Promise<GutendexResponse> {
-  const url = new URL("https://gutendex.com/books/");
+}: BrowseBooksOptions = {}): Promise<GutendexBrowseResult> {
+  const url = getApiUrl("books/");
   url.searchParams.set("languages", "en");
   url.searchParams.set("page", String(page));
 
@@ -62,31 +131,39 @@ export async function browseBooks({
   if (!search && !topic) url.searchParams.set("mime_type", "image/jpeg");
 
   try {
-    const response = await fetch(url, {
-      next: { revalidate },
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (!response.ok) return EMPTY_RESPONSE;
+    const response = await fetchGutendex(url, revalidate);
+    if (!response.ok) throw new GutendexRequestError("Books were not found", 404);
 
     const parsed = responseSchema.safeParse(await response.json());
-    return parsed.success ? parsed.data : EMPTY_RESPONSE;
-  } catch {
+    if (!parsed.success) {
+      throw new GutendexRequestError(
+        `Gutendex response validation failed: ${z.prettifyError(parsed.error)}`,
+      );
+    }
+
+    return { ...parsed.data, unavailable: false };
+  } catch (error) {
+    reportGutendexError("browse", error);
     return EMPTY_RESPONSE;
   }
 }
 
 export async function getBookById(id: string): Promise<GutendexBook | null> {
   try {
-    const response = await fetch(`https://gutendex.com/books/${id}`, {
-      next: { revalidate: 3600 },
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (!response.ok) return null;
+    const response = await fetchGutendex(getApiUrl(`books/${id}`), 3600);
+    if (response.status === 404) return null;
 
     const parsed = bookSchema.safeParse(await response.json());
-    return parsed.success ? parsed.data : null;
-  } catch {
-    return null;
+    if (!parsed.success) {
+      throw new GutendexRequestError(
+        `Gutendex book validation failed: ${z.prettifyError(parsed.error)}`,
+      );
+    }
+
+    return parsed.data;
+  } catch (error) {
+    reportGutendexError(`book ${id}`, error);
+    throw error;
   }
 }
 

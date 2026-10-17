@@ -17,6 +17,10 @@ Librix is a server-rendered digital library built with Next.js 16, TypeScript, P
 - PostgreSQL
 - A `DATABASE_URL` in `.env`
 
+`GUTENDEX_API_URL` is optional and defaults to `https://gutendex.com`. Set it
+in the deployment environment when using a mirror or a self-hosted Gutendex
+instance. It is a server-only setting and must not use the `NEXT_PUBLIC_` prefix.
+
 ```bash
 cp .env.example .env
 npm install

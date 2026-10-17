@@ -28,3 +28,7 @@ export interface GutendexResponse {
   previous: string | null;
   results: GutendexBook[];
 }
+
+export interface GutendexBrowseResult extends GutendexResponse {
+  unavailable: boolean;
+}

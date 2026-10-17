@@ -90,7 +90,25 @@ export default async function BooksPage({ searchParams }: BooksPageProps) {
       </div>
 
       {/* Results */}
-      {books.length === 0 ? (
+      {data.unavailable ? (
+        <div className="text-center py-24" role="alert">
+          <div className="text-6xl mb-4" aria-hidden="true">
+            📚
+          </div>
+          <h3
+            className="font-display text-xl font-semibold mb-2"
+            style={{ color: "var(--text-primary)" }}
+          >
+            Book catalog is temporarily unavailable
+          </h3>
+          <p className="text-sm mb-6" style={{ color: "var(--text-secondary)" }}>
+            The external catalog could not be reached. Please try again shortly.
+          </p>
+          <Link href="/books" className="btn-gold px-6 py-2.5 rounded-lg text-sm">
+            Try Again
+          </Link>
+        </div>
+      ) : books.length === 0 ? (
         <div className="text-center py-24">
           <div className="text-6xl mb-4">🔍</div>
           <h3
