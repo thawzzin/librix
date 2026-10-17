@@ -34,6 +34,19 @@ function getApiUrl(path: string): URL {
   return new URL(path, baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`);
 }
 
+function shouldUseBrowserFallback(): boolean {
+  if (process.env.VERCEL !== "1") return false;
+
+  const configuredUrl = process.env.GUTENDEX_API_URL?.trim();
+  if (!configuredUrl) return true;
+
+  try {
+    return new URL(configuredUrl).hostname === "gutendex.com";
+  } catch {
+    return false;
+  }
+}
+
 async function fetchGutendex(url: URL, revalidate: number): Promise<Response> {
   let lastError: unknown;
 
@@ -93,6 +106,8 @@ export async function browseBooks({
   page = 1,
   revalidate = 300,
 }: BrowseBooksOptions = {}): Promise<GutendexBrowseResult> {
+  if (shouldUseBrowserFallback()) return EMPTY_RESPONSE;
+
   const url = getApiUrl("books/");
   url.searchParams.set("languages", "en");
   url.searchParams.set("page", String(page));
@@ -120,6 +135,8 @@ export async function browseBooks({
 }
 
 export async function getBookById(id: string): Promise<GutendexBook | null> {
+  if (shouldUseBrowserFallback()) return null;
+
   try {
     const response = await fetchGutendex(getApiUrl(`books/${id}`), 3600);
     if (response.status === 404) return null;

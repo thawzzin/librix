@@ -1,6 +1,9 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { browseBooks, getBookById } from "@/lib/gutendex";
-import { browseBooksInBrowser } from "@/lib/gutendex-client";
+import {
+  browseBooksInBrowser,
+  getBookByIdInBrowser,
+} from "@/lib/gutendex-client";
 
 const book = {
   id: 1342,
@@ -16,10 +19,16 @@ const book = {
   download_count: 1,
 };
 
+beforeEach(() => {
+  delete process.env.GUTENDEX_API_URL;
+  delete process.env.VERCEL;
+});
+
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   delete process.env.GUTENDEX_API_URL;
+  delete process.env.VERCEL;
 });
 
 describe("Gutendex server client", () => {
@@ -77,6 +86,21 @@ describe("Gutendex server client", () => {
       "https://catalog.example.test/api/books/1342",
     );
   });
+
+  it("skips the blocked public server API on Vercel", async () => {
+    process.env.VERCEL = "1";
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const [catalog, detail] = await Promise.all([
+      browseBooks(),
+      getBookById("1342"),
+    ]);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(catalog.unavailable).toBe(true);
+    expect(detail).toBeNull();
+  });
 });
 
 describe("Gutendex browser fallback", () => {
@@ -101,5 +125,22 @@ describe("Gutendex browser fallback", () => {
     expect(requestedUrl.searchParams.get("topic")).toBe("fiction");
     expect(requestedUrl.searchParams.get("page")).toBe("2");
     expect(result).toMatchObject({ count: 1, unavailable: false });
+  });
+
+  it("fetches and validates a book detail directly from the public API", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(book), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getBookByIdInBrowser("1342");
+
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
+      "https://gutendex.com/books/1342",
+    );
+    expect(result).toMatchObject({ id: 1342, title: "Pride and Prejudice" });
   });
 });
