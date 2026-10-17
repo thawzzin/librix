@@ -28,6 +28,8 @@
 }
 html {
   scroll-behavior: smooth;
+  scrollbar-color: var(--border-medium) var(--bg-primary);
+  scrollbar-width: thin;
 }
 
 body {
@@ -217,6 +219,37 @@ select:focus {
   outline: none;
   border-color: #7a6229;
   box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.1);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-gold-light);
+  outline-offset: 3px;
+}
+
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (forced-colors: active) {
+  * {
+    scrollbar-color: auto;
+  }
 }
 
 main {

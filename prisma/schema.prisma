@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Book {
+  id              String   @id
+  gutendexId      String   @unique(map: "books_gutendex_id_key") @map("gutendex_id")
+  title           String
+  author          String
+  coverImage      String?  @map("cover_image")
+  formats         Json?    @default("{}")
+  totalCopies     Int      @map("total_copies")
+  availableCopies Int      @map("available_copies")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  rentals         Rental[]
+
+  @@map("books")
+}
+
+model Rental {
+  id          String    @id
+  bookId      String?   @map("book_id")
+  gutendexId  String    @map("gutendex_id")
+  borrowedAt  DateTime  @map("borrowed_at") @db.Timestamptz
+  dueDate     DateTime  @map("due_date") @db.Timestamptz
+  returnedAt  DateTime? @map("returned_at") @db.Timestamptz
+  status      String
+  book        Book?     @relation(fields: [bookId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "rentals_book_id_fkey")
+
+  @@index([status], map: "rentals_status_idx")
+  @@index([gutendexId], map: "rentals_gutendex_idx")
+  @@map("rentals")
+}
