@@ -1,8 +1,8 @@
-import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { connection } from "next/server";
 import BorrowButton from "@/components/BorrowButton";
+import BookDetailFallback from "@/components/BookDetailFallback";
 import StatusBadge from "@/components/StatusBadge";
 import { getBookById } from "@/lib/gutendex";
 import { getBook, getRentalByBookId } from "@/lib/library-service";
@@ -32,12 +32,14 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
   await connection();
   const { id } = await params;
   const [book, localBook, rental] = await Promise.all([
-    getBookById(id),
+    getBookById(id).catch(() => null),
     getBook(id),
     getRentalByBookId(id),
   ]);
 
-  if (!book) notFound();
+  if (!book) {
+    return <BookDetailFallback id={id} localBook={localBook} rental={rental} />;
+  }
 
   const isBorrowed = rental?.status === "BORROWED";
   const isOverdue = Boolean(

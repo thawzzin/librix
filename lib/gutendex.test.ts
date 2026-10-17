@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { browseBooks, getBookById } from "@/lib/gutendex";
+import { browseBooksInBrowser } from "@/lib/gutendex-client";
 
 const book = {
   id: 1342,
@@ -75,5 +76,30 @@ describe("Gutendex server client", () => {
     expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
       "https://catalog.example.test/api/books/1342",
     );
+  });
+});
+
+describe("Gutendex browser fallback", () => {
+  it("fetches and validates the catalog directly from the public API", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({ count: 1, next: null, previous: null, results: [book] }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await browseBooksInBrowser({
+      search: "pride",
+      topic: "fiction",
+      page: 2,
+    });
+
+    const requestedUrl = new URL(String(fetchMock.mock.calls[0]?.[0]));
+    expect(requestedUrl.origin).toBe("https://gutendex.com");
+    expect(requestedUrl.searchParams.get("search")).toBe("pride");
+    expect(requestedUrl.searchParams.get("topic")).toBe("fiction");
+    expect(requestedUrl.searchParams.get("page")).toBe("2");
+    expect(result).toMatchObject({ count: 1, unavailable: false });
   });
 });

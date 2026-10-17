@@ -1,12 +1,9 @@
 import Link from "next/link";
-import BookCard from "@/components/BookCard";
-import { getClassicBooks, getFeaturedBooks } from "@/lib/gutendex";
+import FeaturedBooks from "@/components/FeaturedBooks";
+import { getFeaturedBooks } from "@/lib/gutendex";
 
 export default async function HomePage() {
-  const [featured, classics] = await Promise.all([
-    getFeaturedBooks(),
-    getClassicBooks(),
-  ]);
+  const featured = await getFeaturedBooks();
 
   return (
     <div>
@@ -131,19 +128,7 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        {featured.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 stagger-children">
-            {featured.map((book) => (
-              <BookCard key={book.id} book={book} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-16">
-            <p style={{ color: "var(--text-muted)" }}>
-              Unable to load books. Please check your connection.
-            </p>
-          </div>
-        )}
+        <FeaturedBooks initialBooks={featured} />
       </section>
 
       {/* Divider */}

@@ -1,4 +1,4 @@
-import BookGrid from "@/components/BookGrid";
+import CatalogResults from "@/components/CatalogResults";
 import SearchBar from "@/components/SearchBar";
 import Link from "next/link";
 import { connection } from "next/server";
@@ -44,8 +44,6 @@ export default async function BooksPage({ searchParams }: BooksPageProps) {
     getActiveRentals(),
   ]);
 
-  const books = data.results || [];
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       {/* Header */}
@@ -89,111 +87,13 @@ export default async function BooksPage({ searchParams }: BooksPageProps) {
         })}
       </div>
 
-      {/* Results */}
-      {data.unavailable ? (
-        <div className="text-center py-24" role="alert">
-          <div className="text-6xl mb-4" aria-hidden="true">
-            📚
-          </div>
-          <h3
-            className="font-display text-xl font-semibold mb-2"
-            style={{ color: "var(--text-primary)" }}
-          >
-            Book catalog is temporarily unavailable
-          </h3>
-          <p className="text-sm mb-6" style={{ color: "var(--text-secondary)" }}>
-            The external catalog could not be reached. Please try again shortly.
-          </p>
-          <Link href="/books" className="btn-gold px-6 py-2.5 rounded-lg text-sm">
-            Try Again
-          </Link>
-        </div>
-      ) : books.length === 0 ? (
-        <div className="text-center py-24">
-          <div className="text-6xl mb-4">🔍</div>
-          <h3
-            className="font-display text-xl font-semibold mb-2"
-            style={{ color: "var(--text-primary)" }}
-          >
-            No books found
-          </h3>
-          <p
-            className="text-sm mb-6"
-            style={{ color: "var(--text-secondary)" }}
-          >
-            Try a different search term or browse all books.
-          </p>
-          <Link
-            href="/books"
-            className="btn-gold px-6 py-2.5 rounded-lg text-sm"
-          >
-            Browse All Books
-          </Link>
-        </div>
-      ) : (
-        <>
-          {(search || topic) && (
-            <div className="mb-4 flex items-center gap-2">
-              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-                {search && (
-                  <>
-                    <span style={{ color: "var(--accent-gold)" }}>
-                      &ldquo;{search}&rdquo;
-                    </span>{" "}
-                    ·{" "}
-                  </>
-                )}
-                {data.count?.toLocaleString()} results
-              </p>
-              <Link
-                href="/books"
-                className="text-xs px-2 py-0.5 rounded"
-                style={{
-                  color: "var(--accent-gold)",
-                  border: "1px solid var(--accent-gold-dim)",
-                }}
-              >
-                Clear
-              </Link>
-            </div>
-          )}
-
-          <BookGrid books={books} rentals={activeRentals} />
-
-          {/* Pagination */}
-          <div className="flex items-center justify-center gap-4 mt-12">
-            {data.previous && (
-              <Link
-                href={`/books?${search ? `search=${encodeURIComponent(search)}&` : ""}${topic ? `topic=${topic}&` : ""}page=${page - 1}`}
-                className="px-5 py-2 rounded-lg text-sm font-medium transition-all"
-                style={{
-                  background: "var(--bg-card)",
-                  color: "var(--text-primary)",
-                  border: "1px solid var(--border-medium)",
-                }}
-              >
-                ← Previous
-              </Link>
-            )}
-            <span className="text-sm" style={{ color: "var(--text-muted)" }}>
-              Page {page}
-            </span>
-            {data.next && (
-              <Link
-                href={`/books?${search ? `search=${encodeURIComponent(search)}&` : ""}${topic ? `topic=${topic}&` : ""}page=${page + 1}`}
-                className="px-5 py-2 rounded-lg text-sm font-medium"
-                style={{
-                  background: "var(--bg-card)",
-                  color: "var(--text-primary)",
-                  border: "1px solid var(--border-medium)",
-                }}
-              >
-                Next →
-              </Link>
-            )}
-          </div>
-        </>
-      )}
+      <CatalogResults
+        initialData={data}
+        rentals={activeRentals}
+        search={search}
+        topic={topic}
+        page={page}
+      />
     </div>
   );
 }
